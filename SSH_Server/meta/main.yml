@@ -1,0 +1,28 @@
+---
+galaxy_info:
+  description: Sets a secure config for openssh server >= 6.5
+  license: MIT
+  min_ansible_version: 2.2
+  platforms:
+    - name: Ubuntu
+      versions:
+        - xenial
+        - bionic
+    - name: Debian
+      versions:
+        - jessie
+        - stretch
+    - name: EL
+      versions:
+        - 7
+        - 8
+    - name: AlmaLinux
+      versions:
+        - 8
+  galaxy_tags:
+    - networking
+    - system
+    - ssh
+    - security
+
+dependencies: []

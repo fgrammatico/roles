@@ -1,0 +1,25 @@
+---
+- name: Install Teams
+  become_user: fg
+  apt:
+    deb: "https://go.microsoft.com/fwlink/p/?LinkID=2112886&clcid=0x409&culture=en-us&country=US/teams*_amd64.deb"
+
+- name: Only run "update_cache=yes" if the last one is more than 3600 seconds ago
+  become_user: fg
+  apt:
+    update_cache: yes
+
+- name: Install RemoteDesktopManager
+  become_user: fg
+  apt:
+   deb: "https://cdn.devolutions.net/download/Linux/RDM/2021.1.2.3/RemoteDesktopManager.Free_2021.1.2.3_amd64.deb"
+
+- name: Install conky
+    apt:
+      pkg: conky
+
+- name: Copy Conky config
+  get_url:
+    url: "https://mega.nz/file/ucM1GKyZ#cN-LYUv-nB2TsdMLsT3C1LJpq1P0ZNjbG2T6xXarqMA"
+    dest: /home/fg/.conkyrc
+    mode: '0777'

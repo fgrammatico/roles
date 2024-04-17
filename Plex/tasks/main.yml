@@ -1,0 +1,50 @@
+---
+# tasks file for Plex
+- name: Install basic packages Plex
+  package: name={{ item }} state=present
+  with_items:
+    - ffmpeg #https://ffmpeg.org/
+    - lsyncd #https://axkibe.github.io/lsyncd/
+    - tree #https://www.computerhope.com/unix/tree.htm
+    - ncdu #https://www.binarytides.com/check-disk-usage-linux-ncdu/
+    - python3-pip  
+  register: result_install_packages_plex
+  tags:
+    - basic_packages_plex
+  notify:
+    - Update cache
+
+- name: Install Python modules
+  command: pip3 install mysql-connector eyeD3 -U spotdl docker
+  register: result_install_pymods
+  tags:
+    - pip_nas
+- meta: flush_handlers        
+- debug: msg="{{ result_install_packages_plex|default("nothing was installed") }}"
+  tags:
+    - debug_packages_plexa
+
+- name: Create specific folders
+  file:
+    path: '{{ item }}'
+    state: directory
+    mode: '0755'
+  with_items:
+    - '/mnt/ssd/Plexdb'
+    - '/mnt/ssd/MariaDb'
+    - '/mnt/ssd/PlexTranscode'
+    - '/mnt/ssd/Plex'  
+  tags:
+    - nas specific folders
+
+- name: Docker pull Plex
+  community.docker.docker_image:
+    name: plexinc/pms-docker:1.30.0.6486-629d58034
+    source: pull
+  tags:
+    - docker_plex
+
+- name: Launch container Plex
+  command: docker pull plexinc/pms-docker:latest docker run -d --restart unless-stopped --name plex -p 32400:32400/tcp -p 3005:3005/tcp -p 8324:8324/tcp -p 32469:32469/tcp -p 1900:1900/udp -p 32410:32410/udp -p 32412:32412/udp -p 32413:32413/udp -p 32414:32414/udp -e TZ="Europe/Amsterdam" -e ADVERTISE_IP="http://{{ ansible_facts.eth0.ipv4.address }}:32400/" -h PLEX -v /mnt/ssd/Plexdb:/config -v /mnt/ssd/PlexTranscode:/transcode -v /mnt/ssd/Plex:/data plexinc/pms-docker:latest
+  tags:
+    - docker_plex

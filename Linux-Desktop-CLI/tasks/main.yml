@@ -1,0 +1,129 @@
+- name: Create ansible.cfg file
+  copy:
+    dest: /etc/ansible/ansible.cfg
+    content: |
+      [defaults]
+      inventory = /etc/ansible/hosts
+      remote_user = fg
+      private_key_file = /home/fg/.ssh/personal/id_ed2551
+      host_key_checking = False
+      retry_files_enabled = False
+      timeout = 3
+      nocows=1
+      [privilege_escalation]
+      become = True
+      become_method = sudo
+      become_user = root
+      become_ask_pass = True
+      [ssh_connection]
+      ssh_args = -o ControlMaster=auto -o ControlPersist=60s
+      pipelining = True
+  tags: create_ansible_cfg
+
+- name: Create hosts.ini file
+  copy:
+    dest: /etc/ansible/hosts/hosts.ini
+    content: |
+      [local]
+      localhost ansible_connection=local
+      [k8]
+      192.168.5.100
+      192.168.5.200
+      192.168.5.201
+      [plex]
+      192.168.5.32
+      [all:vars]
+      ansible_user=fg
+      ansible_ssh_private_key_file=[/home/fg/.ssh/personal/id_ed25519]
+  tags: create_hosts_ini
+
+- name: Print completion message
+  debug:
+    msg: "First install complete. You can now run your playbooks."
+  tags: print_completion_message
+
+- name: Install zshell
+  apt:
+    name: zsh
+    state: present
+  when: ansible_distribution == "Debian"
+  tags: install_zshell
+
+- name: Set zsh as default shell
+  command:
+    cmd: chsh -s /bin/zsh fg
+  become: yes
+  when: ansible_distribution == "Debian"
+  tags: set_zsh_default
+
+- name: Install fonts-powerline
+  apt:
+    name: fonts-powerline
+    state: present
+    update_cache: yes
+  become: yes
+  when: ansible_distribution == "Debian"
+  tags: install_fonts_powerline
+
+- name: Download ohmyzsh install script
+  get_url:
+    url: 'https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh'
+    dest: '/tmp/install.sh'
+    mode: '0755'
+  when: ansible_distribution == "Debian"
+  tags: download_ohmyzsh
+
+- name: Run ohmyzsh install script
+  shell: yes | sh /tmp/install.sh
+  become: no
+  when: ansible_distribution == "Debian"
+  tags: install_ohmyzsh
+
+- name: Install rsync
+  apt:
+    name: rsync
+    state: present
+  become: yes
+  when: ansible_distribution == "Debian"
+  tags: install_rsync
+
+- name: Find all files under .ssh
+  find:
+    paths: "/home/fg/.ssh/personal"
+    file_type: file
+  register: ssh_files
+  tags: scan_ssh
+
+- name: Set permission for all files under .ssh to 600
+  file:
+    path: "{{ item.path }}"
+    mode: '0600'
+  with_items: "{{ ssh_files.files }}"
+  tags: set_permissions_ssh_files
+
+- name: Install wget
+  ansible.builtin.apt:
+    name: wget
+    state: present
+  become: yes
+  tags: install_wget
+
+- name: Download and install Hashicorp GPG key
+  ansible.builtin.shell:
+    cmd: wget -O- https://apt.releases.hashicorp.com/gpg | sudo gpg --dearmor -o /usr/share/keyrings/hashicorp-archive-keyring.gpg
+  become: yes
+  tags: tf_gpg
+
+- name: Add Hashicorp repository to sources list
+  ansible.builtin.shell:
+    cmd: echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com {{ ansible_distribution_release }} main" | sudo tee /etc/apt/sources.list.d/hashicorp.list
+  become: yes
+  tags: tf_repo
+
+- name: Update packages and install Terraform
+  ansible.builtin.apt:
+    update_cache: yes
+    name: terraform
+    state: present
+  become: yes
+  tags: tf_install

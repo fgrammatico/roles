@@ -1,0 +1,121 @@
+---
+# tasks file for Security
+- name: Add Yubico repositories
+  become: True
+  command: add-apt-repository ppa:yubico/stable
+  tags:
+    - SEC-add Yubico repositories
+
+- name: Update
+  become: True
+  command: apt update
+  tags:
+    - Update
+
+- name: Install basic packages Security
+  become: True
+  package: name={{ item }} state=present
+  with_items:
+    - net-tools #https://linuxx.info/net-tools/
+    - ssmtp #https://linuxhandbook.com/linux-send-email-ssmtp/
+    - fail2ban #https://linuxhandbook.com/fail2ban-basic/
+    - rkhunter #https://help.ubuntu.com/community/RKhunter
+    - clamav
+    - wireguard
+    - yubikey-manager
+    - yubikey-personalization-gui
+    - libpam-yubico
+    - libpam-u2f
+    - sshpass
+  register: result_install_packages_sec
+  tags:
+    - SEC-basic_packages_sec 
+- debug: msg="{{ result_install_packages_sec|default("nothing was installed") }}"
+  tags:
+    - SEC-debug_packages
+
+- name: Overwrite ssmtp file to {{ ssmtp_dest }}
+  become: True
+  copy:
+    src: ssmtp.conf
+    dest: "{{ ssmtp_dest }}"
+
+- name: Create issue.net file in {{ banner_target }}
+  become: True
+  copy:
+    src: issue.net
+    dest: "{{ banner_target }}"
+  tags:
+    - SEC-create issue.net
+
+- name: Set Firewall block outgoing
+  become: True
+  command: ufw default deny outgoing comment 'deny all outgoing traffic'
+  tags:
+    - SEC-set firewall block outgoing
+
+- name: Set Firewall block incoming
+  become: True
+  command: ufw default deny incoming comment 'deny all incoming traffic'
+  tags:
+    - SEC-set firewall block incoming
+
+- name: Allow DNS
+  become: True
+  command: ufw allow out 53 comment 'allow DNS calls out'
+  tags:
+    - SEC-firewall allow DNS
+
+- name: Allow NTP
+  become: True
+  command: ufw allow out 123 comment 'allow NTP out'
+  tags:
+    - SEC-firewall allow NTP
+
+- name: Allow HTTP out
+  become: True
+  command: ufw allow out http comment 'allow HTTP traffic out'
+  tags:
+    - SEC-firewall allow HTTP
+
+- name: Allow HTTPS out
+  become: True
+  command: ufw allow out https comment 'allow HTTPS traffic out'
+  tags:
+    - SEC-firewall allow HTTPS
+
+- name: Allow Whois out
+  become: True
+  command: ufw allow out whois comment 'allow whois'
+  tags:
+    - SEC-firewall allow WHOIS
+
+- name: Allow SSH in
+  become: True
+  command: ufw allow in 22 comment 'allow SSH'
+  tags:
+    - SEC-firewall allow SSH
+
+- name: Allow Wireguard out
+  become: True
+  command: ufw route allow in on wg0 out on eth0 comment 'route allow Wireguard out'
+  tags:
+    - SEC-firewall allow Wireguard out
+
+- name: Allow Wireguard in
+  become: True
+  command: ufw route allow in on eth0 out on wg0 comment 'route allow Wireguard in'
+  tags:
+    - SEC-firewall allow Wireguard in
+
+- name: Allow Wireguard
+  become: True
+  command: ufw route allow 51822 comment 'allow Wireguard'
+  tags:
+    - SEC-firewall allow Wireguard  
+
+- name: Start ufw
+  become: True
+  command: ufw enable
+  tags:
+    - SEC-firewall up

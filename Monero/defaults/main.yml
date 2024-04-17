@@ -1,0 +1,6 @@
+---
+monero_node_version: v0.18.3.1
+monero_data_dir: /mnt/blockchain/
+monero_log_file: "{{ monero_data_dir }}monerod.log"
+monero_app_dir: /opt/monero
+monero_conf: /etc/monero

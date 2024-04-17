@@ -1,0 +1,26 @@
+---
+# tasks file for AWS_CLI
+- name: Install Zip
+  ansible.builtin.package:
+    name: zip
+    state: present
+
+- name: Download AWS CLI
+  ansible.builtin.unarchive:
+    src: https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip
+    dest: /tmp
+    remote_src: yes
+
+- name: Install AWS CLI
+  command: /tmp/aws/install
+  register: result_install_aws_cli
+
+- debug: msg="{{ result_install_aws_cli|default("nothing was installed") }}"
+  tags:
+    - aws_cli
+    
+- name: Recursively remove aws directory
+  file:
+    path: /tmp/aws
+    state: absent
+

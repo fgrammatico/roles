@@ -1,0 +1,30 @@
+---
+- name: Gather the package facts
+  package_facts:
+    manager: auto
+
+- name: Make sure openssh is installed
+  block:
+    - name: Install openssh-server on Debian based systems
+      apt:
+        name: openssh-server
+        state: latest
+      when: "'ansible_os_family' in ansible_facts.packages"
+
+    - name: Install openssh-server on RedHat based systems
+      yum:
+        name: openssh-server
+        state: latest
+      when: "'redhat' in ansible_facts.packages"
+  tags:
+    - skip_ansible_lint
+
+- name: Test sshd config path
+  stat:
+    path: "{{ ssh_sshd_config_path }}"
+  register: ssh_config_st
+
+- name: Fail if ssh config path is invalid
+  fail:
+    msg: "sshd config file not found! Check your ssh_sshd_config_dir and ssh_sshd_config_path var"
+  when: ssh_config_st.stat.exists is not defined or not ssh_config_st.stat.exists

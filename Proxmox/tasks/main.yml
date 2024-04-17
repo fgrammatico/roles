@@ -1,0 +1,15 @@
+---
+# tasks file for Proxmox
+- name: Download script to remove enterprise repo
+  get_url: url=https://github.com/tteck/Proxmox/raw/main/misc/post-pve-install.sh dest=/root/post-pve-install.sh
+  tags:
+    - down_post_script 
+  register: script
+
+- name: Make the script executable
+  ansible.builtin.file:
+    path: /root/post-pve-install.sh
+    mode: a+x
+
+- name: Run Script
+  ansible.builtin.shell: /root/post-pve-install.sh -y

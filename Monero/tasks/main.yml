@@ -1,0 +1,58 @@
+---
+- name: Make sure we have bzip2.
+  apt:
+    name: bzip2
+    state: present
+
+- name: Create the monero conf directory.
+  file:
+    path: "{{ monero_conf }}"
+    state: directory
+    mode: 0644    
+
+- name: Create the monero data directory.
+  file:
+    path: "{{ monero_data_dir }}"
+    state: directory
+    mode: 0755
+ 
+- name: Create the monero application directory.
+  file:
+    path: "{{ monero_app_dir }}"
+    state: directory
+    mode: 0755
+
+- name: Check if the monero daemon already exists.
+  stat:
+    path: "{{ monero_app_dir }}/monerod"
+  register: monero_daemon_status
+
+- name: Download Monero archive
+  get_url:
+    url: "https://downloads.getmonero.org/cli/monero-linux-x64-{{ monero_node_version }}.tar.bz2"
+    dest: "/opt/monero-linux-x64-{{ monero_node_version }}.tar.bz2"
+    mode: 0644
+
+- name: Extract Monero archive
+  command: "tar -xjf /opt/monero-linux-x64-{{ monero_node_version }}.tar.bz2 --strip-components=1 -C {{ monero_app_dir }}"
+  args:
+    creates: "{{ monero_app_dir }}/*"
+
+- name: Delete Monero archive
+  file:
+    path: "/opt/monero-linux-x64-{{ monero_node_version }}.tar.bz2"
+    state: absent
+
+- name: Copy over the config file.
+  template:
+    src: monero.conf.j2
+    dest: "{{ monero_conf }}/monerod.conf"
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Create a crontab to run monerod at boot.
+  cron:
+    name: "Run monerod at boot"
+    special_time: reboot
+    job: "{{ monero_app_dir }}/monerod --detach --config-file={{ monero_conf }}/monerod.conf"
