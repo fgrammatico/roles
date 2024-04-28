@@ -79,13 +79,19 @@
   when: ansible_distribution == "Debian"
   tags: install_ohmyzsh
 
-- name: Install rsync
+- name: Install packages
   apt:
-    name: rsync
+    name:
+      - rsync
+      - ffmpeg
+      - ncdu
+      - tree
+      - wget
+      - curl
     state: present
   become: yes
   when: ansible_distribution == "Debian"
-  tags: install_rsync
+  tags: install_packages
 
 - name: Find all files under .ssh
   find:
@@ -100,13 +106,6 @@
     mode: '0600'
   with_items: "{{ ssh_files.files }}"
   tags: set_permissions_ssh_files
-
-- name: Install wget
-  ansible.builtin.apt:
-    name: wget
-    state: present
-  become: yes
-  tags: install_wget
 
 - name: Download and install Hashicorp GPG key
   ansible.builtin.shell:
